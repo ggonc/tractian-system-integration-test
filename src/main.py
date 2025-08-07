@@ -5,10 +5,14 @@ import asyncio
 from loguru import logger
 
 # Add the project root to sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(
+    os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..")
+    )
+)
 
-from src.persistence.customer import get_workorders as get_customer_workorders, process_workorder as process_customer_workorder
-from src.persistence.tracos import get_workorders as get_tracos_workorders, process_workorder as process_tracos_workorder
+from tracos_integration.services.customers.customer import get_workorders as get_customer_workorders, process_workorder as process_customer_workorder
+from tracos_integration.services.tracos.tracos import get_workorders as get_tracos_workorders, process_workorder as process_tracos_workorder
 
 async def main():
     """INBOUND"""

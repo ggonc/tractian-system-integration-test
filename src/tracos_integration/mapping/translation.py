@@ -1,4 +1,5 @@
-from setup import CustomerSystemWorkorder, TracOSWorkorder
+from tracos_integration.models.customers.customer_workorder import CustomerSystemWorkorder
+from tracos_integration.models.tractian.tracos_workorder import TracOSWorkorder
 
 class Translator:
 
@@ -27,7 +28,7 @@ class Translator:
             number=customerWorkorder.get('orderNo'),
             status=Translator.get_status(customerWorkorder),
             title=customerWorkorder.get('summary'),
-            description="", # Doesn't have a corresponding field
+            description="", # Doesn't seem to have a corresponding field
             createdAt=customerWorkorder.get('creationDate'),
             updatedAt=customerWorkorder.get('lastUpdateDate'),
             deleted=customerWorkorder.get('isDeleted'),

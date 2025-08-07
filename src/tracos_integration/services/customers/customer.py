@@ -1,10 +1,10 @@
 import json
 import os
 import glob
-from mapping.translation import Translator
+from tracos_integration.mapping.translation import Translator
 from motor.motor_asyncio import AsyncIOMotorClient
 from setup import CustomerSystemWorkorder, TracOSWorkorder
-from helpers.validator import Validator
+from tracos_integration.helpers.validator import Validator
 
 def get_workorders():
     DATA_INBOUND_DIR = os.getenv("DATA_INBOUND_DIR", "data/inbound")

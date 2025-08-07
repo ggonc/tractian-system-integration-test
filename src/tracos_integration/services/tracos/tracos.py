@@ -2,9 +2,9 @@ import datetime
 import os
 import json
 from motor.motor_asyncio import AsyncIOMotorClient
-from mapping.translation import Translator
+from tracos_integration.mapping.translation import Translator
 from setup import CustomerSystemWorkorder
-from helpers.validator import Validator
+from tracos_integration.helpers.validator import Validator
 
 async def get_workorders():
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
@@ -45,7 +45,7 @@ def build_file_name(customerWorkorder: CustomerSystemWorkorder) -> str:
 
 def save_file_on_folder(customerWorkorder: CustomerSystemWorkorder):
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
+    project_root = os.path.abspath(os.path.join(current_dir, "..", "..", "..", ".."))
 
     output_dir = os.path.join(project_root, "data", "outbound")
     output_path = os.path.join(output_dir, build_file_name(customerWorkorder))
