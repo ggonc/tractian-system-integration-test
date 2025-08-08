@@ -22,3 +22,9 @@ class DbHandler:
             self._client.close()
             self._client = None
             self.db = None
+
+    async def __aenter__(self) -> AsyncIOMotorDatabase:
+        return await self.connect()
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        await self.close()

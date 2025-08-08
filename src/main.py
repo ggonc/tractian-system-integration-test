@@ -19,15 +19,15 @@ async def main():
     logger.info("Starting inbound integration...")
     customer_workorders = get_customer_workorders()
     for customer_workorder in customer_workorders:
-        process_customer_workorder(customer_workorder)
-    logger.info("Finished inbound integration")
+        await process_customer_workorder(customer_workorder)
+    logger.info("Finished inbound integration!")
     
     """OUTBOUND"""
     logger.info("Starting outbound integration...")
     tracos_workorders = await get_tracos_workorders()
     for tracos_workorder in tracos_workorders:
-        process_tracos_workorder(tracos_workorder)
-    logger.info("Finished outbound integration")
+        await process_tracos_workorder(tracos_workorder)
+    logger.info("Finished outbound integration!")
 
 if __name__ == "__main__":
     asyncio.run(main())
