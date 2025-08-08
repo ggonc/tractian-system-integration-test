@@ -3,7 +3,7 @@ import datetime
 import os
 import json
 from tracos_integration.mapping.translation import Translator
-from setup import CustomerSystemWorkorder
+from setup import CustomerSystemWorkorder, TracOSWorkorder
 from tracos_integration.helpers.validator import Validator
 from tracos_integration.persistence.db import DbHandler
 from loguru import logger
@@ -25,12 +25,12 @@ async def get_workorders():
         logger.info("Found {workorders_count} TRACOS workorders: {workorders}", workorders_count=len(workorders), workorders=json_util.dumps(workorders, indent=2))
         return workorders
 
-async def process_workorder(tracosWorkorder):
+async def process_workorder(tracosWorkorder: TracOSWorkorder):
     required_fields = ['number', 'status', 'createdAt']
     missing_fields = Validator.validate_required_fields(tracosWorkorder, required_fields)
 
     if(len(missing_fields) != 0):
-        logger.error(f"Aborted processing for workorder {customerWorkorder['orderNo']}! \nThe following required fields are missing or have no value: {missing_fields}")
+        logger.error(f"Aborted processing for workorder {tracosWorkorder['number']}! \nThe following required fields are missing or have no value: {missing_fields}")
         return
     
     customerWorkorder = Translator.tracOS_to_customer(tracosWorkorder)
