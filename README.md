@@ -1,110 +1,115 @@
-# Take-Home Challenge: TracOS ↔ Client Integration Flow
+# TracOS ↔ Client Integration Flow
 
 ## Introduction
+This project implements an **asynchronous Python service** that simulates the integration between Tractian's CMMS (**TracOS**) and a customer's ERP system.
 
-This repository contains a technical assesment to evaluate your skills on a simulated scenario of an integration between Tractian's CMMS (TracOS) and a customer's ERP.
+The integration has two flows:
+- **Inbound**: Client → TracOS
+- **Outbound**: TracOS → Client
 
-The test objective is to build an asynchronous Python service that simulates an integration between our CMMS (TracOS) and a customer's ERP software, containing both an inbound (client → TracOS) and outbound (TracOS → client) flows. The integration focus is to sync work orders between the systems.
-
-The customer's system will be simulated by JSON files representing API responses. Our system will be represented by a MongoDB instance.
-
-Create at least three modules: one to handle read/write on our system (TracOS), one to handle read/write on the customer's system and one to handle translations between systems. The main objective by creating these modules is to have a project where it is easy to add an integration to another system, without needing to modify the existing modules, only expanding them.
-
-Notes: 
-- The dependency management in this project must be done using Poetry.
-- There is a docker-compose to create a MongoDB instance, figure out how to use it.
-- There is a setup.py file that creates samples workorders on our system and on the customer's system (JSON file). You need to run this after you create the MongoDB instance with docker-compose. That file also has some tips on how to build your own code.
-
-The main objectives of this assesment are to demonstrate:
-
-- Clarity in functional requirements  
-- Attention to expected system behavior  
-- Code organization for future maintenance  
+The client's system is simulated by **JSON files** representing API responses.  
+The TracOS system is simulated by a **MongoDB instance**.
 
 ---
 
-## What the System Must Do
+## Architecture Overview
+The project is split into clear, semi-independent modules:
 
-1. **Inbound**  
-   - Read JSON files (simulating the client's API response) from an input folder  
-   - For each work order:  
-     - Validate required fields (e.g., `id`, `status`, `createdAt`)  
-     - Translate payload from client format → TracOS format  
-     - Insert or update the record in a MongoDB collection  
+- **services/customers**  
+  Handles inbound flow:  
+  Reads client workorders from JSON files, validates required fields, translates them into the TracOS format, and performs an **idempotent upsert** into MongoDB.
+  
+- **services/tracos**  
+  Handles outbound flow:  
+  Fetches unsynced TracOS workorders from MongoDB, translates them to the client format, writes them to outbound JSON files, and marks them as synced.
+  
+- **mapping/translation**  
+  Translates and normalizes data between the client and TracOS formats, including mapping status fields.
+  
+- **persistence/db**  
+  Async MongoDB connection handler using `motor` with context manager support.
+  
+- **helpers**  
+  Utility functions, e.g., generating UTC ISO-8601 timestamps.
 
-2. **Outbound**  
-   - Query MongoDB for work orders with `isSynced = false`  
-   - For each record:  
-     - Translate from TracOS format → client format  
-     - Write the output JSON into an output folder, ready to "send" to the client  
-     - Mark the document in MongoDB with `isSynced = true` and set a `syncedAt` timestamp  
-
-3. **Translation / Normalization**  
-   - Normalize date fields to UTC ISO 8601  
-   - Map enums/status values (e.g., client uses `"NEW"`, TracOS uses `"created"`)  
-
-4. **Resilience**  
-   - Clear success and error logs without unreadable stack traces  
-   - Handle I/O errors (corrupted file, permission issues) gracefully  
-   - Simple retry or reconnect logic for MongoDB failures  
-
+> **Note:** This version is tailored for a specific TracOS ↔ sample client scenario.  
 ---
 
-## Non-Technical Requirements
-
-- **Complete README**: explain how to run and a summary of the chosen architecture
-- **Configuration via environment variables**:  
-  - `MONGO_URI` → MongoDB connection string  
-  - `DATA_INBOUND_DIR` and `DATA_OUTBOUND_DIR` → input/output folders  
-- **Basic tests**:  
-  - Sample input and output JSON  
-  - End-to-end workflow verification (full coverage not required)  
-- **Best practices**: informative logging, readable code, simple modularity  
-
----
-
-## Deliverables
-
-1. Git repository forking this repository, containing:  
-   - Running `main.py` should start the entire pipeline  
-   - Clear modules for:  
-     - Read/write on our system
-     - Read/write on customer's system
-     - Translating data between systems
-2. Complete the `README.md` file with the folder structure and a general overview of how the system works.  
-3. At least **one** automated test with `pytest` testing the end-to-end flow  
+## Features Implemented
+- Reads from `DATA_INBOUND_DIR` and writes to `DATA_OUTBOUND_DIR` (both configurable via environment variables).
+- **Inbound flow**:
+  - Reads all JSON files from the inbound directory.
+  - Validates essential fields.
+  - Translates to TracOS format.
+  - Upserts into MongoDB by `number` (idempotent).
+- **Outbound flow**:
+  - Selects all workorders not marked as `isSynced=true`.
+  - Translates to client format.
+  - Saves as JSON in the outbound directory.
+  - Marks as synced in MongoDB with `syncedAt`.
+- Configurable **via `.env` file**.
+- Informative logging using `loguru`.
+- **End-to-end automated test** using `pytest`.
 
 ---
-## Evaluation Criteria
+## Project Structure
+```
+tractian_integrations_engineering_technical_test/
+├── docker-compose.yml                # MongoDB container configuration
+├── pyproject.toml                     # Poetry configuration
+├── setup.py                           # Script to populate sample inbound/outbound data
+├── data/
+│   ├── inbound/                       # Client → TracOS JSON files (input)
+│   └── outbound/                      # TracOS → Client JSON files (output)
+├── src/
+│   ├── main.py                        # Main entrypoint running inbound + outbound flows
+│   └── tracos_integration/
+│       ├── services/
+│       │   ├── customers/
+│       │   │   ├── __init__.py
+│       │   │   └── customer.py        # Inbound flow: reads, validates, translates, upserts to MongoDB
+│       │   └── tracos/
+│       │       ├── __init__.py
+│       │       └── tracos.py          # Outbound flow: fetches unsynced, translates, saves, updates sync status
+│       ├── mapping/
+│       │   ├── __init__.py
+│       │   └── translation.py         # Data translation between client and TracOS formats
+│       ├── models/
+│       │   ├── __init__.py
+│       │   ├── customers/
+│       │   │   └── customer_workorder.py  # TypedDict for customer workorder format
+│       │   └── tractian/
+│       │       └── tracos_workorder.py    # TypedDict for TracOS workorder format
+│       ├── persistence/
+│       │   ├── __init__.py
+│       │   └── db.py                   # Async MongoDB handler using motor
+│       ├── helpers/
+│       │   ├── __init__.py
+│       │   └── datetime_utils.py       # Utility for generating UTC ISO-8601 timestamps
+│       └── __init__.py
+└── tests/
+    ├── __init__.py
+    └── test_e2e_integration.py         # End-to-end integration test (inbound → Mongo → outbound)
+```
 
-- **Functionality**: inbound/outbound flows work as described  
-- **Robustness**: proper error handling and logging  
-- **Clarity**: self-explanatory, comprehensive README  
-- **Maintainability**: clear separation of concerns, modular code  
-- **Tests**: basic coverage of the main workflow  
-
----
-
-## Setting Up The Project
-
-### Prerequisites
-
+## Requirements
 - Python 3.11+
 - Docker and Docker Compose
-- Poetry for dependency management
+- Poetry (for dependency management)
 
-### Installation Steps
+---
 
+## Installation Steps
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd integrations-engineering-code-assesment
+   git clone https://github.com/ggonc/tractian-system-integration-test
+   cd tractian_integrations_engineering_technical_test
    ```
 
 2. **Install dependencies with Poetry**
    ```bash
    # Install Poetry if you don't have it
-   curl -sSL https://install.python-poetry.org | python3 -
+   curl -sSL https://install.python-poetry.org | python -
    
    # Install dependencies
    poetry install
@@ -128,41 +133,13 @@ The main objectives of this assesment are to demonstrate:
    echo "DATA_OUTBOUND_DIR=./data/outbound" >> .env
    ```
 
-## Project Structure
-
-```
-integrations-engineering-code-assesment/
-├── docker-compose.yml       # MongoDB container configuration
-├── pyproject.toml           # Poetry configuration
-├── setup.py                 # Setup script for sample data
-├── data/                    # Data directories
-│   ├── inbound/             # Client → TracOS JSON files
-│   └── outbound/            # TracOS → Client JSON files
-├── src/                     # Source code
-│   └── main.py              # Main execution script
-│   ...
-└── tests/                   # Test directory
-|   ...
-```
-
-## Running the Application
-
-1. **Execute the main script**
-   ```bash
-   python src/main.py
-   ```
-
-## Testing
-
-Run the tests with:
-```bash
-poetry run pytest
-```
+## Future Improvements
+- **MongoDB retry logic:** Implement exponential backoff on connection and operations to handle temporary connectivity issues.
+- **Inbound file idempotency:** Move processed inbound files to a processed/ folder or track them to avoid reprocessing.
+- **Generic module design:** Refactor services to make them fully reusable for different clients with minimal code changes.
 
 ## Troubleshooting
 
 - **MongoDB Connection Issues**: Ensure Docker is running and the MongoDB container is up with `docker ps`
 - **Missing Dependencies**: Verify Poetry environment is activated or run `poetry install` again
 - **Permission Issues**: Check file permissions for data directories
-
-
