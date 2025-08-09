@@ -133,6 +133,20 @@ tractian_integrations_engineering_technical_test/
    echo "DATA_OUTBOUND_DIR=./data/outbound" >> .env
    ```
 
+## Running the Application
+
+1. **Execute the main script**
+   ```bash
+   poetry run python src/main.py
+   ```
+
+## Testing
+
+Run the tests with:
+```bash
+poetry run pytest
+```
+
 ## Future Improvements
 - **MongoDB retry logic:** Implement exponential backoff on connection and operations to handle temporary connectivity issues.
 - **Inbound file idempotency:** Move processed inbound files to a processed/ folder or track them to avoid reprocessing.
