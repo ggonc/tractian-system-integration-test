@@ -2,6 +2,7 @@ from bson import json_util
 import datetime
 import os
 import json
+from src.tracos_integration.helpers.utils import utcnow_iso
 from tracos_integration.mapping.translation import Translator
 from setup import CustomerSystemWorkorder, TracOSWorkorder
 from tracos_integration.helpers.validator import Validator
@@ -50,7 +51,7 @@ def build_file_name(customerWorkorder: CustomerSystemWorkorder) -> str:
 def save_file_on_folder(customerWorkorder: CustomerSystemWorkorder):
     try:
         logger.info("Saving CUSTOMER workorder as a file... {workorder}", workorder=json_util.dumps(customerWorkorder, indent=2))
-        
+
         output_dir = os.getenv("DATA_OUTBOUND_DIR", "data/outbound")
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, build_file_name(customerWorkorder))
@@ -71,7 +72,7 @@ async def update_workorder_sync_info_on_database(customerWorkorder: CustomerSyst
 
         filter = { "number": customerWorkorder["orderNo"] }
         value = { "$set": 
-            { "isSynced": True, "syncedAt": datetime.datetime.now() }
+            { "isSynced": True, "syncedAt": utcnow_iso() }
         }
         await collection.update_one(filter, value, upsert=True)
         logger.info(f"Workorder {customerWorkorder['orderNo']} synced on database!")
