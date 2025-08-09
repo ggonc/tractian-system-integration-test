@@ -50,11 +50,9 @@ def build_file_name(customerWorkorder: CustomerSystemWorkorder) -> str:
 def save_file_on_folder(customerWorkorder: CustomerSystemWorkorder):
     try:
         logger.info("Saving CUSTOMER workorder as a file... {workorder}", workorder=json_util.dumps(customerWorkorder, indent=2))
-
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.abspath(os.path.join(current_dir, "..", "..", "..", ".."))
-
-        output_dir = os.path.join(project_root, "data", "outbound")
+        
+        output_dir = os.getenv("DATA_OUTBOUND_DIR", "data/outbound")
+        os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, build_file_name(customerWorkorder))
 
         with open(output_path, "w", encoding="utf-8") as file:
