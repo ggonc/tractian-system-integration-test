@@ -2,7 +2,8 @@ import json
 import os
 import glob
 from tracos_integration.mapping.translation import Translator
-from setup import CustomerSystemWorkorder, TracOSWorkorder
+from tracos_integration.models.customers.customer_workorder import CustomerSystemWorkorder
+from tracos_integration.models.tractian.tracos_workorder import TracOSWorkorder
 from tracos_integration.helpers.validator import Validator
 from tracos_integration.persistence.db import DbHandler
 from loguru import logger

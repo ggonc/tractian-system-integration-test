@@ -2,9 +2,10 @@ from bson import json_util
 import datetime
 import os
 import json
-from src.tracos_integration.helpers.utils import utcnow_iso
+from tracos_integration.helpers.utils import utcnow_iso
 from tracos_integration.mapping.translation import Translator
-from setup import CustomerSystemWorkorder, TracOSWorkorder
+from tracos_integration.models.customers.customer_workorder import CustomerSystemWorkorder
+from tracos_integration.models.tractian.tracos_workorder import TracOSWorkorder
 from tracos_integration.helpers.validator import Validator
 from tracos_integration.persistence.db import DbHandler
 from loguru import logger
