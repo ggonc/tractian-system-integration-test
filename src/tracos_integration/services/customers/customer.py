@@ -15,25 +15,34 @@ def get_workorders():
     workorders = []
     for file_path in files_paths:
         workorder = get_workorder_from_files(file_path)
+        if(workorder is None):
+            # Skip corrupted files
+            continue
         logger.info("Workorder found: {workorder}", workorder=json.dumps(workorder, indent=2))
         workorders.append(workorder)
-    
     return workorders
 
 def get_workorder_from_files(filePath: str):
-    with open(filePath, 'r', encoding="UTF-8") as f:
-        return json.load(f)
+    try:
+        with open(filePath, 'r', encoding="UTF-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        logger.error(f"Failed to read or parse file on {filePath}: \nException: {e}")
+        return None
 
 async def process_workorder(customerWorkorder: CustomerSystemWorkorder):
-    required_fields = ['orderNo', 'creationDate']
-    missing_fields = Validator.validate_required_fields(customerWorkorder, required_fields)
+    try:
+        required_fields = ['orderNo', 'creationDate']
+        missing_fields = Validator.validate_required_fields(customerWorkorder, required_fields)
 
-    if(len(missing_fields) != 0):
-        logger.error(f"Aborted processing for workorder {customerWorkorder['orderNo']}! \nThe following required fields are missing or have no value: {missing_fields}")
-        return
+        if(len(missing_fields) != 0):
+            logger.error(f"Aborted processing for workorder {customerWorkorder['orderNo']}! \nThe following required fields are missing or have no value: {missing_fields}")
+            return
 
-    tracosWorkorder = Translator.customer_to_tracOS(customerWorkorder)
-    await upsert_workorder_on_database(tracosWorkorder)
+        tracosWorkorder = Translator.customer_to_tracOS(customerWorkorder)
+        await upsert_workorder_on_database(tracosWorkorder)
+    except Exception as e:
+        logger.error(f"Error processing workorder {customerWorkorder['orderNo']}: \nException: {e}")
 
 async def upsert_workorder_on_database(tracosWorkorder: TracOSWorkorder):
     logger.info("Upserting TRACOS workorder on database... {workorder} ", workorder=json.dumps(tracosWorkorder, indent=2))
@@ -49,4 +58,3 @@ async def upsert_workorder_on_database(tracosWorkorder: TracOSWorkorder):
         
         await collection.update_one(filter, value, upsert=True)
         logger.info(f"Workorder {tracosWorkorder['number']} created/updated on database!")
-

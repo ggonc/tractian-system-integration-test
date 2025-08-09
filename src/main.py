@@ -17,16 +17,35 @@ from tracos_integration.services.tracos.tracos import get_workorders as get_trac
 async def main():
     """INBOUND"""
     logger.info("Starting inbound integration...")
-    customer_workorders = get_customer_workorders()
+    try:
+        customer_workorders = get_customer_workorders()
+    except Exception as e:
+        logger.error(f"Failed to get customer workorders: \nException: {e}")
+        customer_workorders = []
+
     for customer_workorder in customer_workorders:
-        await process_customer_workorder(customer_workorder)
+        try:
+            await process_customer_workorder(customer_workorder)
+        except Exception as e:
+            logger.error(f"Failed to process customer workorder {customer_workorder.get('orderNo', 'unknown')}:  \nException: {e}")
+
     logger.info("Finished inbound integration!")
+    
     
     """OUTBOUND"""
     logger.info("Starting outbound integration...")
-    tracos_workorders = await get_tracos_workorders()
+    try:
+        tracos_workorders = await get_tracos_workorders()
+    except Exception as e:
+        logger.error(f"Failed to get tracOs workorders: {e}")
+        tracos_workorders = []
+
     for tracos_workorder in tracos_workorders:
-        await process_tracos_workorder(tracos_workorder)
+        try:
+            await process_tracos_workorder(tracos_workorder)
+        except Exception as e:
+            logger.error(f"Failed to process tracOs workorder {tracos_workorder.get('number', 'unknown')}: {e}")
+
     logger.info("Finished outbound integration!")
 
 if __name__ == "__main__":
